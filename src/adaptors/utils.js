@@ -23,7 +23,7 @@ exports.getData = async (url, query = null) => {
   } else {
     res = await superagent.get(url);
   }
-  res = res.body;
+  res = res.data;
   return res;
 };
 

@@ -183,6 +183,7 @@ const main = async () => {
       _data.push(item)
     }
   })
+  JSON.stringify
   const data = _data.map((el) => buildPool(el, 'ethereum'));
   data.push(acrvData);
   return data.filter((p) => utils.keepFinite(p));
@@ -192,3 +193,4 @@ module.exports = {
   timetravel: false,
   apy: main,
 };
+
