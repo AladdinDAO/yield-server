@@ -1,5 +1,12 @@
-const superagent = require('superagent');
+const https = require('https');
+const axios = require('axios');
 const { request, gql } = require('graphql-request');
+
+const Agent = new https.Agent({
+  rejectUnauthorized: false
+})
+const superagent = axios.create()
+superagent.defaults.httpsAgent = Agent
 
 exports.formatChain = (chain) => chain.charAt(0).toUpperCase() + chain.slice(1);
 

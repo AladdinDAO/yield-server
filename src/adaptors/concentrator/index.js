@@ -7,7 +7,7 @@ const AladdinConvexVaultABI = require('./abis/AladdinConvexVault.json');
 const AladdinCRVABI = require('./abis/AladdinCRV.json');
 const curvePools = require('./pools.js');
 
-const ALADDIN_API_BASE_URL = 'http://concentrator-api.aladdin.club/'
+const ALADDIN_API_BASE_URL = 'https://concentrator-api.aladdin.club/'
 
 const concentratorVault = '0xc8fF37F7d057dF1BB9Ad681b53Fa4726f268E0e8';
 const concentratorNewVault = '0x3Cf54F3A1969be9916DAD548f3C084331C4450b5';
@@ -15,7 +15,7 @@ const concentratorAcrv = '0x2b95A1Dcc3D405535f9ed33c219ab38E8d7e0884';
 
 function createIncrementArray(length) {
   const arr = []
-  for (let i = 0; i < length; i++)
+  for (let i = 0;i < length;i++)
     arr.push(i)
   return arr
 }
