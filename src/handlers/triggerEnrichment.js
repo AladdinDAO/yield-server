@@ -12,6 +12,7 @@ const {
 const { getStat } = require('../queries/stat');
 const { welfordUpdate } = require('../utils/welford');
 const poolsResponseColumns = require('../utils/enrichedColumns');
+const { getExcludedAdaptors } = require('../utils/exclude');
 
 module.exports.handler = async (event, context) => {
   await main();
@@ -27,6 +28,9 @@ const main = async () => {
     '1e00ac2b-0c3c-4b1f-95be-9378f98d2b40'
   );
   data = [...data, ...aaveGHO];
+
+  const excludedProjects = await getExcludedAdaptors();
+  data = data.filter((p) => !excludedProjects.has(p.project));
 
   // remove aave v2 frozen assets from dataEnriched (we keep ingesting into db, but don't
   // want to display frozen pools on the UI)
@@ -108,6 +112,7 @@ const main = async () => {
   if (!stablecoins.includes('more')) stablecoins.push('more');
   if (!stablecoins.includes('ustb')) stablecoins.push('ustb');
   if (!stablecoins.includes('usdn')) stablecoins.push('usdn');
+  if (!stablecoins.includes('aiusd')) stablecoins.push('aiusd');
 
   // get catgory data (we hardcode IL to true for options protocols)
   const config = (
@@ -406,7 +411,7 @@ const checkStablecoin = (el, stablecoins) => {
     tokens.some((t) => t.includes('emaid')) ||
     tokens.some((t) => t.includes('grail')) ||
     tokens.some((t) => t.includes('oxai')) ||
-    tokens.some((t) => t.includes('crv')) ||
+    tokens.some((t) => t.includes('crv') && !t.includes('crvusd')) ||
     tokens.some((t) => t.includes('wbai')) ||
     tokens.some((t) => t.includes('move'))
   ) {
