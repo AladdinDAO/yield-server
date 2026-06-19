@@ -1,9 +1,10 @@
-const superagent = require('superagent');
+const axios = require('axios');
 const { default: BigNumber } = require('bignumber.js');
 
 const utils = require('../utils');
 
 const {
+  API_CORE_BASE_URL,
   CRV_API_BASE_URL,
   CRV_API_BASE_URL_V1,
   BLOCKCHAINIDS,
@@ -15,6 +16,9 @@ const assetTypeMapping = {
   btc: 'ethereum:0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
   eth: 'ethereum:0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
 };
+
+const sanitizeText = (value) =>
+  typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, '').trim() : value;
 
 const THREE_CRV_ADDRESS = '0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490';
 
@@ -41,6 +45,15 @@ const getPools = async (blockchainId) => {
     } catch (error) {
       continue;
     }
+
+    if (["monad", "plasma"].includes(blockchainId) && (!response?.success || !response?.data?.poolData?.length)) {
+      try {
+        response = await utils.getData(API_CORE_BASE_URL + uri);
+      } catch {
+        continue;
+      }
+    }
+
     if (response?.success && response?.data?.poolData?.length) {
       const poolsByAddressForRegistry = Object.fromEntries(
         response.data.poolData.map((pool) => [pool.address, pool])
@@ -239,8 +252,8 @@ const main = async () => {
   // get wbtc and weth price which we use for reward APR in case totalSupply field = 0
   const coins = Object.values(assetTypeMapping).join(',').toLowerCase();
   const underlyingPrices = (
-    await superagent.get(`https://coins.llama.fi/prices/current/${coins}`)
-  ).body.coins;
+    await axios.get(`https://coins.llama.fi/prices/current/${coins}`)
+  ).data.coins;
 
   // const celoApy = (
   //   await utils.getData('https://api.curve.fiance/api/getFactoryAPYs-celo')
@@ -375,7 +388,8 @@ const main = async () => {
 
       const overrideData = OVERRIDE_DATA?.[blockchainId]?.[address];
       const symbol =
-        overrideData?.symbol || pool.coins.map((coin) => coin.symbol).join('-');
+        sanitizeText(overrideData?.symbol) ||
+        pool.coins.map((coin) => sanitizeText(coin.symbol)).join('-');
       const url =
         overrideData?.url || `https://curve.finance/#/${blockchainId}/pools`;
 

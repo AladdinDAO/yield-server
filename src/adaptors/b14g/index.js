@@ -2,6 +2,8 @@ const sdk = require('@defillama/sdk');
 const STAKING_CONTRACT = '0xee21ab613d30330823D35Cf91A84cE964808B83F';
 const MARKETPLACE_CONTRACT = '0x04EA61C431F7934d51fEd2aCb2c5F942213f8967';
 const WBTC_VAULT_CONTRACT = '0xa3CD4D4A568b76CFF01048E134096D2Ba0171C27';
+const WBTC_CORE = '0x5832f53d147b3d6cd4578b9cbd62425c7ea9d0bd';
+const DUAL_CORE_TOKEN = '0xc5555eA27e63cd89f8b227deCe2a3916800c0f4F';
 const { getLatestBlock } = require('@defillama/sdk/build/util');
 const { getPrices } = require('../utils');
 const { fetchURL } = require('../../helper/utils');
@@ -124,35 +126,37 @@ const getTurnRoundBlockNumber = async (blockNumber) => {
       abi: 'uint256:roundTag',
     })
   ).output;
-  return (
-    await sdk.api.util.getLogs({
-      keys: [],
-      chain: 'core',
-      target: '0x0000000000000000000000000000000000001005',
-      topic: 'turnedRound(uint256)',
-      fromBlock: blockNumber.block - 86400,
-      toBlock: blockNumber.block,
-    })
-  ).output.filter(
-    (el) => parseInt(el.data) === parseInt(roundTag.toString())
-  )[0].blockNumber;
+  const logs = await sdk.getEventLogs({
+    chain: 'core',
+    target: '0x0000000000000000000000000000000000001005',
+    eventAbi: 'event turnedRound(uint256)',
+    fromBlock: blockNumber.block - 86400,
+    toBlock: blockNumber.block,
+  });
+  const matched = logs.find(
+    (el) => el.args[0].toString() === roundTag.toString()
+  );
+  if (!matched) {
+    throw new Error(`turnedRound not found for roundTag ${roundTag}`);
+  }
+  return matched.blockNumber;
 };
 
 const getCORERewardForBTCHolderPerDay = async (blockNumber) => {
   //get all order
   let allOrder = (
-    await sdk.api.util.getLogs({
-      keys: [],
+    await sdk.getEventLogs({
       chain: 'core',
       target: MARKETPLACE_CONTRACT,
-      topic: 'CreateRewardReceiver(address,address,uint256,uint256)',
+      eventAbi:
+        'event CreateRewardReceiver(address indexed owner, address indexed order, uint256, uint256)',
       fromBlock: 19942300,
       toBlock: blockNumber.block,
     })
-  ).output.map((el) => {
+  ).map((el) => {
     return {
-      order: el.topics[2].replace('000000000000000000000000', ''),
-      owner: el.topics[1].replace('000000000000000000000000', ''),
+      order: el.args.order,
+      owner: el.args.owner,
     };
   });
 
@@ -536,10 +540,12 @@ const getApy = async () => {
       pool: `${STAKING_CONTRACT}-core`,
       project: 'b14g',
       symbol: 'CORE',
+      token: DUAL_CORE_TOKEN,
       tvlUsd: dualCOREVault.totalStake * price.pricesBySymbol.core,
       apyBase: dualCOREVault.apy,
       chain: 'core',
       url: 'https://app.b14g.xyz/vaults/core',
+      underlyingTokens: ['0x0000000000000000000000000000000000000000'], // native CORE
     },
     {
       pool: `${WBTC_VAULT_CONTRACT}-core`,
@@ -549,15 +555,18 @@ const getApy = async () => {
       apyBase: wBTCVault.apy,
       chain: 'core',
       url: 'https://app.b14g.xyz/vaults/core',
+      underlyingTokens: [WBTC_CORE],
     },
     {
       pool: `${MARKETPLACE_CONTRACT}-bitcoin`,
       project: 'b14g',
       symbol: 'BTC',
+      token: null,
       tvlUsd: btcMarketplace.totalLock * price.pricesBySymbol.wbtc,
       apyBase: btcMarketplace.apy,
       chain: 'bitcoin',
       url: 'https://app.b14g.xyz/marketplace',
+      underlyingTokens: ['coingecko:bitcoin'], // native BTC
     },
   ];
 };

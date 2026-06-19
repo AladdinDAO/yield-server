@@ -1,4 +1,4 @@
-const superagent = require('superagent');
+const axios = require('axios');
 const sdk = require('@defillama/sdk');
 
 const abi = require('./abi.js');
@@ -184,8 +184,8 @@ const main = async (pool) => {
     ...tokens.map((t) => `${pool.chain}:${t}`),
   ].join(',');
   const prices = (
-    await superagent.get(`https://coins.llama.fi/prices/current/${priceKeys}`)
-  ).body.coins;
+    await axios.get(`https://coins.llama.fi/prices/current/${priceKeys}`)
+  ).data.coins;
 
   const collateralDecimalsRes = await sdk.api.abi.multiCall({
     abi: 'erc20:decimals',
@@ -254,6 +254,7 @@ const main = async (pool) => {
     symbol: symbols[i],
     chain: pool.chain.charAt(0).toUpperCase() + pool.chain.slice(1),
     project: 'compound-v3',
+    token: null,
     tvlUsd: collateralTotalSupplyUsd[i],
     apy: 0,
     underlyingTokens: [t],

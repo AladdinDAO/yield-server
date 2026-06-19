@@ -1,4 +1,4 @@
-const superagent = require('superagent');
+const axios = require('axios');
 const sdk = require('@defillama/sdk');
 const {liquidityMiningV2Abi} = require('./abiV2');
 
@@ -28,7 +28,7 @@ const CHAIN_CONFIG = {
 
 const getChainData = async (chain) => {
   const config = CHAIN_CONFIG[chain];
-  const assets = (await superagent.get(config.statsUrl)).body.assets;
+  const assets = (await axios.get(config.statsUrl)).data.assets;
 
   const lpTokenAddresses = assets.map(
     (assetData) => assetData.ipTokenAssetAddress
@@ -91,7 +91,7 @@ const buildPool = (asset, chainData, chainConfig, chainName, coinPrices) => {
     lpApr = asset.periods.find(({period}) => period === 'MONTH').ipTokenReturnValue;
   }
 
-  const coinPrice = coinPrices[`${chainName}:${asset.assetAddress.toLowerCase()}`].price;
+  const coinPrice = coinPrices[`${chainName}:${asset.assetAddress.toLowerCase()}`]?.price;
   const lpBalanceHistory = asset.periods.find(({period}) => period === 'HOUR').totalLiquidity;
   const lpBalance = lpBalanceHistory[lpBalanceHistory.length - 1].totalLiquidity;
   const lpTokenPriceHistory = asset.periods.find(({period}) => period === 'HOUR').ipTokenExchangeRates;
@@ -139,8 +139,8 @@ const apy = async () => {
   );
 
   const coinPrices = (
-    await superagent.get(`${COIN_PRICES_URL}/${coinKeys.join(',').toLowerCase()}`)
-  ).body.coins;
+    await axios.get(`${COIN_PRICES_URL}/${coinKeys.join(',').toLowerCase()}`)
+  ).data.coins;
 
   return chainsData.flatMap(({chain, config, data}) =>
     data.assets.map(asset =>

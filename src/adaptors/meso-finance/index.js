@@ -76,7 +76,7 @@ async function main() {
         const aptosPriceRes = await utils.getData(
           `${COINS_LLAMA_PRICE_URL}aptos:${coinAddr}`
         );
-        coinPrice = aptosPriceRes['coins'][`aptos:${coinAddr}`]['price'];
+        coinPrice = aptosPriceRes['coins'][`aptos:${coinAddr}`]?.price;
       }
 
       const res = {
@@ -88,6 +88,7 @@ async function main() {
           ((pool.poolSupply - pool.totalDebt) * coinPrice) /
           10 ** pool['token']['decimals'],
         apyBase: pool.supplyApy + pool.stakingApr,
+        underlyingTokens: [coinAddr],
       };
 
       if (pool.incentiveSupplyApy > 0) {

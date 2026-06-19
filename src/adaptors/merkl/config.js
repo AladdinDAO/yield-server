@@ -11,4 +11,7 @@ exports.networks = {
   80094: 'berachain',
   56: 'bsc',
   42220: 'celo',
+  143: 'monad',
+  999: 'hyperevm',
+  4114: 'citrea',
 };
